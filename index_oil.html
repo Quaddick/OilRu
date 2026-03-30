@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RU OIL FLOW // MARCH 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --red:    #ff2233; --orange:#ff8800; --green:#00ff88;
+    --blue:   #00cfff; --yellow:#ffe000; --bg:#06080d;
+    --panel:  rgba(6,10,18,0.91); --border:rgba(255,255,255,0.08);
+    --text:   #c8d8e8; --dim:#4a5a6a;
+    --mono:   'Share Tech Mono',monospace; --head:'Orbitron',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg)}
+  #map{position:absolute;inset:0;z-index:1}
+  body::after{content:'';position:fixed;inset:0;z-index:2;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)}
+
+  /* TOP BAR */
+  #topbar{position:fixed;top:0;left:0;right:0;z-index:10;height:50px;
+    background:linear-gradient(180deg,rgba(6,10,18,0.98) 0%,rgba(6,10,18,0.72) 100%);
+    border-bottom:1px solid rgba(255,34,51,0.22);display:flex;align-items:center;
+    justify-content:space-between;padding:0 18px;backdrop-filter:blur(8px)}
+  .logo{font-family:var(--head);font-size:12px;font-weight:900;letter-spacing:4px;
+    color:#fff;text-shadow:0 0 22px rgba(255,34,51,0.5)}
+  .logo span{color:var(--red)}
+  .top-mid{display:flex;gap:22px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .top-mid .hi{color:var(--text)}
+  .top-right{display:flex;gap:9px;align-items:center}
+  .badge{font-family:var(--head);font-size:9px;font-weight:700;letter-spacing:2px;padding:5px 10px}
+  .badge-r{color:var(--red);border:1px solid var(--red);background:rgba(255,34,51,0.08);
+    animation:blink 1.6s steps(1) infinite}
+  .badge-o{color:var(--orange);border:1px solid var(--orange);background:rgba(255,136,0,0.08)}
+  @keyframes blink{0%,45%{opacity:1}50%,95%{opacity:0.2}100%{opacity:1}}
+
+  /* PANELS */
+  #lp{position:fixed;top:60px;left:12px;z-index:10;width:222px;display:flex;flex-direction:column;gap:7px}
+  #rp{position:fixed;top:60px;right:12px;z-index:10;width:214px;display:flex;flex-direction:column;gap:7px}
+  .pb{background:var(--panel);border:1px solid var(--border);padding:10px 13px;backdrop-filter:blur(12px)}
+  .pt{font-family:var(--head);font-size:8px;font-weight:700;letter-spacing:3px;color:var(--dim);margin-bottom:8px}
+  .hr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;
+    border-bottom:1px solid rgba(255,255,255,0.04);font-family:var(--mono);font-size:10.5px}
+  .hr:last-child{border-bottom:none}
+  .hn{color:var(--text)} .hv{color:var(--dim);font-size:9px}
+  .hs{font-size:7.5px;font-weight:700;letter-spacing:1px;padding:2px 5px;white-space:nowrap}
+  .s-sd{color:#ff0011;background:rgba(255,0,17,0.15);border:1px solid rgba(255,0,17,0.4);animation:blink 1.6s steps(1) infinite}
+  .s-dg{color:#ff5500;background:rgba(255,85,0,0.13);border:1px solid rgba(255,85,0,0.35)}
+  .s-rk{color:#ffaa00;background:rgba(255,170,0,0.10);border:1px solid rgba(255,170,0,0.25)}
+  .s-ok{color:var(--green);background:rgba(0,255,136,0.10);border:1px solid rgba(0,255,136,0.25)}
+  .s-se{color:var(--orange);background:rgba(255,136,0,0.10);border:1px solid rgba(255,136,0,0.25)}
+  .s-bl{color:var(--blue);background:rgba(0,207,255,0.10);border:1px solid rgba(0,207,255,0.22)}
+  .s-cut{color:#ff0011;background:rgba(255,0,17,0.15);border:1px solid rgba(255,0,17,0.4)}
+
+  /* STATS */
+  .sg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .sc{padding:9px 6px;text-align:center;border:1px solid var(--border);background:rgba(255,255,255,0.02)}
+  .sn{font-family:var(--head);font-size:19px;font-weight:900;line-height:1}
+  .sl{font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px;letter-spacing:1px}
+  .nr{color:#ff1122;text-shadow:0 0 12px rgba(255,17,34,0.6)}
+  .no{color:var(--orange);text-shadow:0 0 12px rgba(255,136,0,0.5)}
+  .ng{color:var(--green);text-shadow:0 0 12px rgba(0,255,136,0.5)}
+  .ny{color:var(--yellow);text-shadow:0 0 12px rgba(255,224,0,0.5)}
+
+  /* ALERTS */
+  .ar{font-family:var(--mono);font-size:9px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+    display:flex;gap:7px;align-items:flex-start}
+  .ar:last-child{border-bottom:none}
+  .ad{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:2px}
+  .dr{background:#ff1122;box-shadow:0 0 5px #ff1122;animation:blink 1.6s steps(1) infinite}
+  .do{background:var(--orange);box-shadow:0 0 5px var(--orange)}
+  .dy{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}
+  .db{background:var(--blue);box-shadow:0 0 5px var(--blue)}
+  .at{color:var(--text);line-height:1.55}
+
+  /* LEGEND */
+  #leg{position:fixed;bottom:30px;left:12px;z-index:10;background:var(--panel);
+    border:1px solid var(--border);padding:10px 13px;backdrop-filter:blur(12px);width:284px}
+  .lr{display:flex;align-items:center;gap:9px;margin-top:5px;font-family:var(--mono);font-size:9px;color:var(--dim)}
+  .ld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+  /* SOURCE */
+  #src{position:fixed;bottom:30px;right:12px;z-index:10;font-family:var(--mono);font-size:8.5px;
+    color:var(--dim);background:var(--panel);border:1px solid var(--border);
+    padding:6px 10px;backdrop-filter:blur(8px);text-align:right;line-height:1.8}
+  #src span{color:var(--text)}
+
+  /* TICKER */
+  #tick{position:fixed;bottom:0;left:0;right:0;z-index:10;height:24px;
+    background:rgba(6,10,18,0.97);border-top:1px solid rgba(255,34,51,0.3);
+    overflow:hidden;display:flex;align-items:center}
+  .tl{flex-shrink:0;padding:0 12px;height:100%;display:flex;align-items:center;
+    background:var(--red);font-family:var(--head);font-size:8.5px;font-weight:700;letter-spacing:2px;color:#fff}
+  .tt{display:flex;white-space:nowrap;animation:scroll 75s linear infinite;
+    font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+  .ti{padding:0 32px}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* LEAFLET */
+  .leaflet-popup-content-wrapper{background:rgba(5,9,17,0.97)!important;
+    border:1px solid rgba(255,255,255,0.12)!important;border-radius:0!important;
+    color:var(--text)!important;backdrop-filter:blur(14px);box-shadow:0 8px 40px rgba(0,0,0,0.9)!important}
+  .leaflet-popup-tip{background:rgba(5,9,17,0.97)!important}
+  .leaflet-popup-content{margin:13px 15px!important;font-family:var(--mono);
+    font-size:10.5px;line-height:1.8;min-width:240px}
+  .ptit{font-family:var(--head);font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:2px}
+  .prow{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid rgba(255,255,255,0.05);padding:2px 0}
+  .prow:last-of-type{border-bottom:none}
+  .pk{color:var(--dim)}
+  .pnote{margin-top:8px;color:var(--dim);font-size:9.5px;line-height:1.6;
+    padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)}
+  .leaflet-container{background:#060a10!important}
+  .leaflet-control-zoom a{background:rgba(6,10,18,0.9)!important;color:var(--text)!important;
+    border-color:var(--border)!important;font-family:var(--mono)!important}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="topbar">
+  <div class="logo"><span>RU</span>OIL // EXPORT MONITOR — LIVE STATUS</div>
+  <div class="top-mid">
+    <span>DATE: <span class="hi">30 MAR 2026</span></span>
+    <span>OFFLINE: <span style="color:#ff1122;font-weight:bold">~40% CAPACITY</span></span>
+    <span>ACTIVE: <span class="hi">6 / 10 HUBS</span></span>
+  </div>
+  <div class="top-right">
+    <div class="badge badge-o">~2 Mb/d OFFLINE</div>
+    <div class="badge badge-r">&#9632; CRITICAL DISRUPTION</div>
+  </div>
+</div>
+
+<div id="lp">
+  <div class="pb">
+    <div class="pt">// BALTIC — УНИЧТОЖЕНЫ</div>
+    <div class="hr"><span class="hn">Ust-Luga</span><span class="hv">85 Mt/a</span><span class="hs s-sd">SHUTDOWN</span></div>
+    <div class="hr"><span class="hn">Primorsk</span><span class="hv">65 Mt/a</span><span class="hs s-sd">SHUTDOWN</span></div>
+  </div>
+  <div class="pb">
+    <div class="pt">// BLACK SEA</div>
+    <div class="hr"><span class="hn">Novorossiysk</span><span class="hv">100+ Mt/a</span><span class="hs s-dg">DEGRADED</span></div>
+    <div class="hr"><span class="hn">Tuapse</span><span class="hv">18 Mt/a</span><span class="hs s-rk">AT RISK</span></div>
+    <div class="hr"><span class="hn">Taman</span><span class="hv">15 Mt/a</span><span class="hs s-rk">AT RISK</span></div>
+  </div>
+  <div class="pb">
+    <div class="pt">// FAR EAST — ОСНОВНАЯ НАГРУЗКА</div>
+    <div class="hr"><span class="hn">Kozmino</span><span class="hv">45 Mt/a</span><span class="hs s-ok">INTACT</span></div>
+    <div class="hr"><span class="hn">Prigorodnoye</span><span class="hv">15 Mt/a</span><span class="hs s-ok">250 kbd</span></div>
+    <div class="hr"><span class="hn">De-Kastri</span><span class="hv">10 Mt/a</span><span class="hs s-ok">OPR</span></div>
+  </div>
+  <div class="pb">
+    <div class="pt">// ARCTIC</div>
+    <div class="hr"><span class="hn">Murmansk</span><span class="hv">25 Mt/a</span><span class="hs s-se">SEIZE</span></div>
+    <div class="hr"><span class="hn">Varandey</span><span class="hv">6 Mt/a</span><span class="hs s-bl">OPR</span></div>
+  </div>
+  <div class="pb">
+    <div class="pt">// PIPELINE</div>
+    <div class="hr"><span class="hn">Druzhba (UA sector)</span><span class="hv">~1 Mb/d</span><span class="hs s-cut">CUT</span></div>
+  </div>
+</div>
+
+<div id="rp">
+  <div class="pb" style="text-align:center;padding:14px 10px">
+    <div style="font-family:var(--head);font-size:36px;font-weight:900;color:#ff1122;text-shadow:0 0 24px rgba(255,17,34,0.7);line-height:1">~40%</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:2px;margin-top:2px">EXPORT CAPACITY OFFLINE</div>
+    <div style="font-family:var(--mono);font-size:8.5px;color:#5a6a7a;margin-top:6px;line-height:1.5">worst RU supply disruption<br>in modern history — Reuters</div>
+  </div>
+  <div class="pb">
+    <div class="pt">// СТАТУС 30 МАР 2026</div>
+    <div class="sg">
+      <div class="sc"><div class="sn nr">2</div><div class="sl">SHUTDOWN</div></div>
+      <div class="sc"><div class="sn no">1</div><div class="sl">DEGRADED</div></div>
+      <div class="sc"><div class="sn ng">3</div><div class="sl">FAR EAST OK</div></div>
+      <div class="sc"><div class="sn ny">1</div><div class="sl">DRUZHBA CUT</div></div>
+    </div>
+  </div>
+  <div class="pb">
+    <div class="pt">// INTEL ALERTS</div>
+    <div class="ar"><div class="ad dr"></div><div class="at">Ust-Luga: 60% cap destroyed. 5 атак за 5 дней. 1 причал сгорел полностью. SBU Alpha подтвердила Mar 29.</div></div>
+    <div class="ar"><div class="ad dr"></div><div class="at">Primorsk: загрузка приостановлена с 24 мар. Многократные удары. ЗАФИКСИРОВАНО NASA FIRMS.</div></div>
+    <div class="ar"><div class="ad do"></div><div class="at">Novorossiysk: ниже плана с начала марта. 700 kbd cap повреждена дроном.</div></div>
+    <div class="ar"><div class="ad dy"></div><div class="at">Murmansk: порт цел, но 300 kbd заблокированы EU-арестами теневых танкеров.</div></div>
+    <div class="ar"><div class="ad db"></div><div class="at">Kozmino + Sakhalin: ~1.9 Mb/d через ESPO + пайплайны в Китай — без изменений.</div></div>
+  </div>
+  <div class="pb">
+    <div class="pt">// РАБОЧИЕ МАРШРУТЫ</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--dim);line-height:2">
+      ✅ <span style="color:var(--green)">ESPO → Kozmino → China</span><br>
+      ✅ <span style="color:var(--green)">Skovorodino–Mohe pipeline</span><br>
+      ✅ <span style="color:var(--green)">Sakhalin-1/2 (~250 kbd)</span><br>
+      △ <span style="color:var(--orange)">Black Sea → ниже мощности</span><br>
+      ✗ <span style="color:#ff3344">Baltic seaborne — HALTED</span><br>
+      ✗ <span style="color:#ff3344">Druzhba (UA sector) — CUT</span>
+    </div>
+  </div>
+</div>
+
+<div id="leg">
+  <div class="pt">// ЛЕГЕНДА</div>
+  <div class="lr"><div class="ld" style="background:rgba(255,0,17,0.4);border:1.5px solid #ff0011"></div>Shutdown — атакован, загрузка остановлена</div>
+  <div class="lr"><div class="ld" style="background:rgba(255,85,0,0.3);border:1.5px solid #ff5500"></div>Degraded — ниже мощности / атакован</div>
+  <div class="lr"><div class="ld" style="background:rgba(0,255,136,0.2);border:1.5px solid #00ff88"></div>Operational — Far East, целый</div>
+  <div class="lr"><div class="ld" style="background:rgba(0,170,255,0.2);border:1.5px solid #00aaff"></div>Disrupted — аресты танкеров, Arctic</div>
+  <div class="lr"><div class="ld" style="background:rgba(255,136,0,0.35);border:1.5px dashed #ff8800"></div>STS Transfer Zone — теневой флот</div>
+  <div class="lr"><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#2a8a5a" stroke-width="1.5" stroke-dasharray="5,4"/></svg>Действующий морской маршрут</div>
+  <div class="lr"><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#ff2233" stroke-width="1.5" stroke-dasharray="3,4"/></svg>Прерванный / атакованный маршрут</div>
+</div>
+
+<div id="src">
+  <div>SOURCES: <span>Reuters · Bloomberg · Kyiv Independent</span></div>
+  <div>NASA FIRMS · Barents Observer · RFERL</div>
+  <div>UPDATED: <span>30 MAR 2026 07:00 UTC</span></div>
+</div>
+
+<div id="tick">
+  <div class="tl">INTEL FEED</div>
+  <div class="tt" id="tt"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map',{center:[35,42],zoom:3,zoomControl:false,attributionControl:false});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18,subdomains:'abcd'}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// Extra CSS
+const xs = document.createElement('style');
+xs.textContent=`
+@keyframes pls{0%{transform:scale(.8);opacity:.9}100%{transform:scale(2.8);opacity:0}}
+.leaflet-tooltip{background:rgba(5,9,17,.93)!important;border:1px solid rgba(255,255,255,.12)!important;
+  color:#c8d8e8!important;font-family:'Share Tech Mono',monospace!important;font-size:10px!important;
+  border-radius:0!important;padding:4px 8px!important;box-shadow:none!important}
+.leaflet-tooltip-top::before{border-top-color:rgba(255,255,255,.12)!important}
+.leaflet-popup-close-button{color:#4a5a6a!important}
+.leaflet-popup-close-button:hover{color:#c8d8e8!important}`;
+document.head.appendChild(xs);
+
+// ── HUBS ─────────────────────────────────────────────────────
+const H=[
+  {name:'Ust-Luga',lat:59.68,lng:28.25,r:18,c:'#ff0011',f:'rgba(255,0,17,.22)',
+   flag:'🔴 SHUTDOWN',cap:'85 Mt/a (~700 kbd)',util:'~0% (HALTED)',region:'Baltic',
+   note:'5 ударов дронами 25–29 марта 2026. Один причал полностью уничтожен. 60% экспортной мощности выведено из строя (Зеленский). Операция SBU Alpha подтверждена 29 мар. NASA FIRMS + Dnipro OSINT: пожары на резервуарах и сервисных корпусах.'},
+  {name:'Primorsk',lat:60.37,lng:28.60,r:16,c:'#ff0011',f:'rgba(255,0,17,.22)',
+   flag:'🔴 SHUTDOWN',cap:'65 Mt/a',util:'~0% (SUSPENDED)',region:'Baltic',
+   note:'Атакован дронами 24–25 марта. Пожары на топливных резервуарах. Погрузка нефти приостановлена. Вместе с Ust-Luga давал >12 Мт crude в янв 2026. Попытка частичного возобновления прервана повторными ударами.'},
+  {name:'Novorossiysk',lat:44.72,lng:37.77,r:20,c:'#ff5500',f:'rgba(255,85,0,.20)',
+   flag:'🟠 DEGRADED',cap:'>100 Mt/a (~700 kbd)',util:'~55–65%',region:'Black Sea',
+   note:'Мощный удар дронами начало марта 2026. Загрузка ниже плановых объёмов. Главные ворота ЧМ, включая казахстанский CPC blend. Очереди на проход Босфора. Страховые премии на танкеры выросли.'},
+  {name:'Tuapse',lat:44.10,lng:39.07,r:9,c:'#ff8800',f:'rgba(255,136,0,.16)',
+   flag:'🟡 AT RISK',cap:'18 Mt/a',util:'~70%',region:'Black Sea',
+   note:'Подтверждённых повреждений на 30 мар нет. Работает в условиях повышенной угрозы. Активность ПВО в регионе зафиксирована.'},
+  {name:'Taman',lat:45.21,lng:36.72,r:8,c:'#ff8800',f:'rgba(255,136,0,.16)',
+   flag:'🟡 AT RISK',cap:'15 Mt/a',util:'~75%',region:'Black Sea',
+   note:'СПГ/нафта терминал. Нефтяная загрузка — второстепенная функция. Мониторинг угроз повышен.'},
+  {name:'Kozmino',lat:42.72,lng:133.07,r:13,c:'#00ff88',f:'rgba(0,255,136,.14)',
+   flag:'✅ INTACT — PIVOT',cap:'45 Mt/a (~1.1 Mb/d ESPO)',util:'110%+',region:'Far East',
+   note:'Основная точка перенаправления. Конечная точка нефтепровода ВСТО. Непрерывная загрузка, не затронутая украинской кампанией. ESPO + трубопроводы в Китай = ~1.9 Mb/d (Reuters).'},
+  {name:'Prigorodnoye',lat:46.65,lng:143.08,r:8,c:'#00ff88',f:'rgba(0,255,136,.12)',
+   flag:'✅ OPERATIONAL',cap:'15 Mt/a',util:'~95%',region:'Sakhalin-2',
+   note:'Сахалин-2 (СПГ + нефть). Совокупный морской экспорт Сахалин-1/2: ~250 kbd. Продолжается без перебоев (Reuters).'},
+  {name:'De-Kastri',lat:51.47,lng:140.78,r:7,c:'#00ff88',f:'rgba(0,255,136,.12)',
+   flag:'✅ OPERATIONAL',cap:'10 Mt/a',util:'~90%',region:'Sakhalin-1',
+   note:'Нефтеналивной терминал Сахалин-1. Японский offtake переструктурирован через посредников. Работает без перебоев (Reuters/Bloomberg).'},
+  {name:'Murmansk',lat:68.97,lng:33.05,r:10,c:'#00aaff',f:'rgba(0,170,255,.14)',
+   flag:'🔵 DISRUPTED',cap:'25 Mt/a (~300 kbd)',util:'Impaired',region:'Arctic',
+   note:'Инфраструктура порта цела. Нарушение вызвано арестами EU/G7 судов теневого флота в европейских водах — ~300 kbd (Reuters/traders). Норвегия выражает озабоченность экологическими рисками от старых теневых танкеров у побережья. Порт становится запасным хабом по мере закрытия балтийских маршрутов.'},
+  {name:'Varandey',lat:68.82,lng:58.10,r:6,c:'#00cfff',f:'rgba(0,207,255,.12)',
+   flag:'🔵 OPERATIONAL',cap:'6 Mt/a',util:'~70%',region:'Arctic / Timan-Pechora',
+   note:'Офшорный SPM-терминал. Нефть Тимано-Печорского бассейна. Сезонные ограничения по льду.'},
+];
+
+H.forEach(h=>{
+  L.circleMarker([h.lat,h.lng],{radius:h.r+9,color:h.c,weight:0,fillColor:h.f.replace(/[\d.]+\)$/,'0.07)'),fillOpacity:1}).addTo(map);
+  L.circleMarker([h.lat,h.lng],{radius:h.r,color:h.c,weight:1.5,fillColor:h.f,fillOpacity:1}).addTo(map)
+    .bindPopup(`<div class="ptit" style="color:${h.c}">${h.name}</div>
+      <div class="prow"><span class="pk">Region</span><span>${h.region}</span></div>
+      <div class="prow"><span class="pk">Capacity</span><span>${h.cap}</span></div>
+      <div class="prow"><span class="pk">Utilization</span><span style="color:${h.c}">${h.util}</span></div>
+      <div class="prow"><span class="pk">Status</span><span style="color:${h.c}">${h.flag}</span></div>
+      <div class="pnote">${h.note}</div>`,{maxWidth:310});
+});
+
+// ── STS ZONES ─────────────────────────────────────────────────
+[
+  {n:'Laconian Gulf',lat:36.50,lng:22.60,reg:'Greece',v:'15–25 vessels',vol:'~30 Mt/a',
+   note:'Главная точка сбора теневого флота с ЧМ. Перевалка на несанкционированные танкеры. Мониторинг OFAC/EU активен.'},
+  {n:'Gotland / Danish Straits',lat:57.50,lng:18.50,reg:'Baltic int. waters',v:'8–14',vol:'~20 Mt/a',
+   note:'STS-коридор Балтики. Смена флага, блендинг. Нарушен вследствие ударов по Приморску/Усть-Луге upstream.'},
+  {n:'Ceuta / Gibraltar',lat:35.88,lng:-5.30,reg:'Strait of Gibraltar',v:'5–10',vol:'~10 Mt/a',
+   note:'Атлантический ретранслятор. Дальнейший маршрут в ЮВА через мыс Доброй Надежды.'},
+].forEach(s=>{
+  const ic=L.divIcon({className:'',
+    html:`<div style="position:relative;width:20px;height:20px">
+      <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid #ff8800;animation:pls 2s ease-out infinite;opacity:.7"></div>
+      <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid #ff8800;animation:pls 2s ease-out .7s infinite;opacity:.35"></div>
+      <div style="position:absolute;inset:5px;border-radius:50%;background:#ff8800;opacity:.85"></div>
+    </div>`,iconSize:[20,20],iconAnchor:[10,10]});
+  L.marker([s.lat,s.lng],{icon:ic}).addTo(map)
+    .bindPopup(`<div class="ptit" style="color:#ff8800">⬡ STS: ${s.n}</div>
+      <div class="prow"><span class="pk">Region</span><span>${s.reg}</span></div>
+      <div class="prow"><span class="pk">Shadow vessels</span><span style="color:#ff8800">${s.v}</span></div>
+      <div class="prow"><span class="pk">Throughput</span><span>${s.vol}</span></div>
+      <div class="pnote">${s.note}</div>`,{maxWidth:280});
+});
+
+// ── DESTINATION MARKERS ───────────────────────────────────────
+[{n:'Sikka (India)',lat:22.44,lng:69.86},{n:'Vadinar (India)',lat:22.46,lng:69.72},
+ {n:'Qingdao (China)',lat:36.07,lng:120.37},{n:'Ningbo (China)',lat:29.86,lng:121.55},
+ {n:'Aliaga (Turkey)',lat:38.80,lng:26.97},{n:'Suez Canal',lat:30.42,lng:32.35},
+].forEach(d=>{
+  L.circleMarker([d.lat,d.lng],{radius:4,color:'rgba(200,216,232,.7)',weight:1,
+    fillColor:'rgba(200,216,232,.3)',fillOpacity:1}).addTo(map)
+    .bindTooltip(d.n,{permanent:false,direction:'top',offset:[0,-5]});
+});
+
+// ── MARITIME ROUTES (waypoints follow sea lanes) ───────────────
+function R(pts,col,dash,w){
+  L.polyline(pts,{color:col,weight:w||1.3,opacity:.55,dashArray:dash||'7,5'}).addTo(map);
+}
+
+// KEY NODES
+const BOSPHORUS=[41.10,29.05],SUEZ=[30.42,32.35],ADEN=[11.60,43.20];
+const LACAN=[36.50,22.60],CEUTA=[35.88,-5.30],CAPE=[-34.36,18.47];
+
+// -- BALTIC EXITS (red/struck — Gulf of Finland → Danish Straits)
+// Real route: Gulf of Finland → past Tallinn → past Stockholm → Öresund/Kattegat → North Sea
+const BALT_OUT=[[59.9,26],[59.3,22.5],[58.8,19],[58,16],[57.5,12.5],[57.5,10.5]];
+R([[59.68,28.25],...BALT_OUT],'#ff2233','4,5',1.0); // Ust-Luga (struck)
+R([[60.37,28.60],...BALT_OUT],'#ff2233','4,5',1.0); // Primorsk (struck)
+
+// -- MURMANSK → Norwegian Sea → Atlantic (partially disrupted, ice/tanker issues)
+// Route: Kola Inlet → Norwegian Sea → past Jan Mayen → SE toward Denmark
+R([[68.97,33.05],[70,25],[70,15],[67,5],[63,0],[60,-2],[57.5,5],[57.5,10.5]],'#1a4a7a','4,5',1.0);
+
+// -- GOTLAND STS → North Sea out
+R([[57.50,18.50],[57.5,12.5],[57.5,10.5]],'#5a4a3a','3,4',.8);
+
+// -- BLACK SEA → Bosphorus → Aegean (real route stays in sea)
+// Novorossiysk → western Black Sea coast → Bosphorus
+const BS_TO_BOSPHORUS=[[44.72,37.77],[43.5,35],[42.5,31],[41.5,29.5],[41.10,29.05]];
+
+// Novorossiysk → Turkey (Aliaga)
+R([...BS_TO_BOSPHORUS,[40.5,27.5],[39.8,27],[38.80,26.97]],'#3a7a6a');
+
+// Novorossiysk → Laconian Gulf STS
+R([...BS_TO_BOSPHORUS,[40,27],[39,25],[38,23.5],[37.3,22.8],[36.50,22.60]],'#3a7a6a');
+
+// -- LACONIAN GULF → Suez Canal (through Mediterranean, around Crete east side)
+R([[36.50,22.60],[35.5,25],[34.5,27.5],[32.8,32],[30.42,32.35]],'#3a7a6a');
+
+// -- SUEZ → Red Sea → Gulf of Aden → Indian Ocean → India (real sea lane)
+R([[30.42,32.35],[27,35],[22,37.5],[17,40],[13.5,42.5],[11.60,43.20],
+   [10,47],[11,52],[14,58],[17,62],[20,65],[22.44,69.86]],'#3a7a6a');
+
+// -- CEUTA → Cape of Good Hope (Atlantic coast of Africa, stays in ocean)
+R([[35.88,-5.30],[30,-13],[20,-18],[10,-18],[0,-10],[-8,-4],
+   [-15,4],[-22,10],[-29,15],[-34.36,18.47]],'#3a6a4a');
+
+// -- CAPE → Indian Ocean → India
+R([[-34.36,18.47],[-28,33],[-20,44],[-10,50],[0,53],[8,52],
+   [11.60,43.20],[10,47],[14,58],[18,62],[22,68],[22.44,69.86]],'#3a6a4a');
+
+// -- FAR EAST → CHINA (Sea of Japan / Yellow Sea, real sea lanes)
+R([[42.72,133.07],[40,131],[38,129],[37,126],[36.5,122],[36.07,120.37]],'#2a8a5a'); // Kozmino→Qingdao
+R([[42.72,133.07],[38,128],[33,125],[30,123],[29.86,121.55]],'#2a8a5a'); // Kozmino→Ningbo
+R([[51.47,140.78],[48,138],[44,133],[40,130],[37,126],[36.07,120.37]],'#2a8a5a'); // De-Kastri→Qingdao
+R([[46.65,143.08],[43,137],[40,131],[37,126],[36.07,120.37]],'#2a8a5a'); // Prigorodnoye→Qingdao
+
+// -- DRUZHBA PIPELINE (overland, red — offline)
+// Approximate route: Samara → Bryansk → through Ukraine → Hungary
+R([[53,50],[52,44],[51.5,38],[51,33],[50.5,28],[49.5,23],[49,19],[48,18],[47.5,18]],'#ff2233','3,4',1.2);
+// Strike X marker on Ukraine segment
+L.circleMarker([50.3,30.5],{radius:7,color:'#ff2233',weight:2,
+  fillColor:'rgba(255,34,51,.35)',fillOpacity:1}).addTo(map)
+  .bindTooltip('Druzhba pipeline — CUT (Ukraine sector)',{permanent:false,direction:'top'});
+
+// ── TICKER ────────────────────────────────────────────────────
+const items=[
+  '🔴 UST-LUGA [29 MAR]: 5-й удар подряд. Один причал сгорел полностью. 60% мощности выведено из строя — Зеленский. Подтв. SBU Alpha.',
+  '🔴 PRIMORSK [25 MAR]: Загрузка приостановлена. Пожары на резервуарах. Попытка частичного возобновления прервана повторными ударами.',
+  '🟠 REUTERS 25 MAR: ~40% экспортной мощности России вне строя (~2 Mb/d). Худший сбой в современной истории страны.',
+  '🟠 NOVOROSSIYSK: Загрузка ниже плана с начала марта после удара дронами. Мощность 700 kbd нарушена.',
+  '🔵 MURMANSK: Порт цел, но 300 kbd Arctic нарушено EU-арестами теневых танкеров в европейских водах.',
+  '✅ KOZMINO: Непрерывная работа. ESPO + трубопроводы в Китай = ~1.9 Mb/d. Главная работающая артерия России.',
+  '✅ САХАЛИН-1/2: ~250 kbd морского экспорта — продолжается без перебоев (Reuters/Bloomberg).',
+  '🟡 DRUZHBA (UA sector): OFFLINE после невыясненного взрыва. Венгрия и Словакия — без поставок.',
+  '🇺🇸 US TREASURY 12 MAR: Временная лицензия на покупку российской нефти, застрявшей в море — ответ на иранский шок.',
+  '🇺🇦 ЗЕЛЕНСКИЙ 28 MAR: Украина прекратит удары по энергообъектам, если Россия остановит атаки на украинскую инфраструктуру.',
+  '⚠️ НЕФТЬ >$100/bbl: Удары по РФ-экспорту + иранская война = двойной шок предложения на глобальном рынке.',
+];
+const all=[...items,...items];
+document.getElementById('tt').innerHTML=all.map(t=>`<span class="ti">${t}</span>`).join('');
+</script>
+</body>
+</html>
