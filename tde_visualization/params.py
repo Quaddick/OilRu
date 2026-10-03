@@ -12,7 +12,7 @@ Physical scenario (what the picture represents)
                     -> stellar DIAMETER (12 R_sun) is ~2.9x the horizon diameter,
                        but the star is ~4e5 times less massive than the hole.
   Tidal radius      r_t = R* (M_bh/M*)^(1/3) ~ 440 R_sun ~ 200 R_s   >>  R_s
-  Pericentre        r_p ~ 7 R_s (deep encounter)  > r_mb = 2 R_s  > R_s
+  Pericentre        r_p = 12 R_s  > r_ISCO = 3 R_s  > R_s
   -> the star is torn apart far outside the event horizon; only a tiny fraction
      of debris ever gets close enough to be swallowed directly.
 
@@ -21,8 +21,8 @@ Artistic compression (stated honestly)
   * Time is compressed non-uniformly (see timeline.py): seconds of screen time
     span minutes (pericentre passage) up to months (disk formation).
   * The SPATIAL scale of the debris orbits is compressed: the debris energy
-    spread is computed with an effective mass ratio q_eff = 1e3 instead of 4e5,
-    so the most-bound debris turns around at ~300 R_s instead of ~1e4 R_s and the
+    spread is computed with an effective mass ratio q_eff ~ 120 instead of 4e5,
+    so the most-bound debris turns around at ~50 R_s instead of ~1e4 R_s and the
     returning streams fit in one frame. Star size, horizon size, shadow size and
     pericentre distance keep their true ratios.
 """
